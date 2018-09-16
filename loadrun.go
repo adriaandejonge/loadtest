@@ -1,4 +1,4 @@
-package github.com/adriaandejonge/loadrun
+package main
 
 import (
 	"bufio"
