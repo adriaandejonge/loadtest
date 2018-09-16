@@ -34,34 +34,43 @@ func main() {
 	queue := make(chan string)
 	timer := make(chan int)
 	hits := make(chan int)
+	stop := make(chan struct{})
 
 	for i := 0; i < goroutines; i++ {
-		go readFromQueue(i, queue)
+		go readFromQueue(i, queue, stop)
 	}
 
-	go report(hits, timer)
-	go sleepSec(5, timer)
+	go report(hits, timer, stop)
+	go sleepSec(REPORT_INTERVAL, timer, stop)
 
 	readLogs(fileName, queue, hits)
 
+	close(stop)
 	for i := 0; i < goroutines; i++ {
-		queue <- "END"
+
 	}
 
 	os.Exit(0)
-
 }
 
-func sleepSec(timeout int, timer chan int) {
+func sleepSec(timeout int, timer chan int, stop chan struct{}) {
+loop:
 	for {
-		time.Sleep(time.Duration(timeout) * time.Second)
-		timer <- timeout
+		select {
+		case <-stop:
+			log.Println("end timer")
+			break loop
+		default:
+			time.Sleep(time.Duration(timeout) * time.Second)
+			timer <- timeout
+		}
 	}
 }
 
-func report(hits chan int, timer chan int) {
+func report(hits chan int, timer chan int, stop chan struct{}) {
 	counter := 0
 	previousCount := 0
+loop:
 	for {
 		select {
 		case count := <-hits:
@@ -71,43 +80,49 @@ func report(hits chan int, timer chan int) {
 			new /= seconds
 			previousCount = counter
 			log.Println(strconv.Itoa(new) + " req/s")
+		case <-stop:
+			log.Println("end timer")
+			break loop
 		}
 	}
 }
 
-func readFromQueue(id int, queue chan string) {
-	logLine := <-queue
+func readFromQueue(id int, queue chan string, stop chan struct{}) {
+loop:
+	for {
+		select {
+		case logLine := <-queue:
+			processLogLine(logLine)
+		case <-stop:
+			log.Println("end reading queue", id)
+			break loop
+		}
+	}
+}
 
-	for logLine != "END" {
-		start := strings.Index(logLine, "\"GET ")
-		end := strings.Index(logLine, " HTTP/")
+func processLogLine(logLine string) {
 
-		url := "not found"
+	start := strings.Index(logLine, "\"GET ")
+	end := strings.Index(logLine, " HTTP/")
 
-		if start > 0 && end > 0 {
-			url = logLine[start+5 : end]
+	if start > 0 && end > 0 {
+		url := logLine[start+5 : end]
 
-			filtered := false
+		filtered := false
 
-			for _, el := range filterURLs {
-				if strings.Index(url, el) > 0 {
-					filtered = true
-				}
-			}
-
-			if !filtered {
-
-				_, err := http.Get(BASEURL + url)
-				if err != nil {
-					log.Println(err)
-				}
-
+		for _, el := range filterURLs {
+			if strings.Index(url, el) > 0 {
+				filtered = true
 			}
 		}
 
-		logLine = <-queue
+		if !filtered {
+			_, err := http.Get(BASEURL + url)
+			if err != nil {
+				log.Println(err)
+			}
+		}
 	}
-
 }
 
 func readLogs(fileName string, queue chan string, hits chan int) {
