@@ -46,9 +46,6 @@ func main() {
 	readLogs(fileName, queue, hits)
 
 	close(stop)
-	for i := 0; i < goroutines; i++ {
-
-	}
 
 	os.Exit(0)
 }
@@ -81,7 +78,7 @@ loop:
 			previousCount = counter
 			log.Println(strconv.Itoa(new) + " req/s")
 		case <-stop:
-			log.Println("end timer")
+			log.Println("end reporter")
 			break loop
 		}
 	}
