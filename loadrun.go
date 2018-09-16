@@ -119,11 +119,7 @@ func readLogs(fileName string, queue chan string, hits chan int) {
 	scanner := bufio.NewScanner(file)
 
 	for scanner.Scan() {
-		// for i := 0; i < 1000; i++ {
-		// 	scanner.Scan()
-
 		queue <- scanner.Text()
 		hits <- 1
-		//time.Sleep(200 * time.Millisecond)
 	}
 }
