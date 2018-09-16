@@ -12,6 +12,7 @@ import (
 
 const (
 	BASEURL = "https://PUTYOURURLHERE"
+	REPORT_INTERVAL = 1
 )
 
 var filterURLs = []string{
