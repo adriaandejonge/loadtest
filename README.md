@@ -12,13 +12,13 @@ Please note:
 ## Running:
 
 ```
-./loadrun -l=<logfilename> -f=<filter-list> -b=<base-url> -r=<report-interval-in-sec> -c=<no-of-concurr-requests>
+./loadtest -l=<logfilename> -f=<filter-list> -b=<base-url> -r=<report-interval-in-sec> -c=<no-of-concurr-requests>
 ```
 
 
 e.g.:
 ```
-./loadrun -l=myaccesslogfile.log -f=http,//,/mcss,/online-api -b=https://www.mydomain.com -r=5 -c=2
+./loadtest -l=myaccesslogfile.log -f=http,//,/mcss,/online-api -b=https://www.mydomain.com -r=5 -c=2
 ```
 
 ## Building
@@ -26,9 +26,9 @@ e.g.:
 Make sure you have a recent version of Go installed.
 
 ```
-GOOS=linux GOARCH=amd64 go get github.com/adriaandejonge/loadrun
-GOOS=windows GOARCH=amd64 go get github.com/adriaandejonge/loadrun
-GOOS=darwin GOARCH=amd64 go get github.com/adriaandejonge/loadrun
+GOOS=linux GOARCH=amd64 go get github.com/adriaandejonge/loadtest
+GOOS=windows GOARCH=amd64 go get github.com/adriaandejonge/loadtest
+GOOS=darwin GOARCH=amd64 go get github.com/adriaandejonge/loadtest
 ```
 
 You will probably want top edit the `BASEURL` constant after the first build. Change this in `~/go/src/github.com/adriaandejonge/loadrun` and build again
