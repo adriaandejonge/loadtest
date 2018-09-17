@@ -12,13 +12,13 @@ Please note:
 ## Running:
 
 ```
-./loadrun <bigswitch-log-file-name> <number-of-concurrent-requests>
+./loadrun -l=<logfilename> -f=<filter-list> -b=<base-url> -r=<report-interval-in-sec> -c=<no-of-concurr-requests>
 ```
 
 
 e.g.:
 ```
-./loadrun ./access_log-2018-09-16-1537084023 3
+./loadrun -l=myaccesslogfile.log -f=http,//,/mcss,/online-api -b=https://www.mydomain.com -r=5 -c=2
 ```
 
 ## Building
