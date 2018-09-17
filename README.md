@@ -30,5 +30,3 @@ GOOS=linux GOARCH=amd64 go get github.com/adriaandejonge/loadtest
 GOOS=windows GOARCH=amd64 go get github.com/adriaandejonge/loadtest
 GOOS=darwin GOARCH=amd64 go get github.com/adriaandejonge/loadtest
 ```
-
-You will probably want top edit the `BASEURL` constant after the first build. Change this in `~/go/src/github.com/adriaandejonge/loadrun` and build again
