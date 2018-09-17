@@ -18,17 +18,21 @@ Usage of loadtest:
   -c int
     	number of concurrent requests (default 2)
   -f string
-    	comma-separated list of URLs to filter
-  -k	Boolean value keep cookies or not
+    	comma-separated list of URLs to filter (default "a,b,c")
+  -k	keep cookies across requests
   -l string
     	file name of access log file to interpret
   -r int
     	report interval in seconds (default 1)
+  -rp
+    	repeat after done reading log file
+  -s	suppress errors
+  -v	verbose output
 ```
 
 e.g.:
 ```
-./loadtest -l=myaccesslogfile.log -f=http,//,/undesirable,/my-api -b=https://www.mydomain.com -r=5 -c=2 -k=true
+./loadtest -l=myaccesslogfile.log -f=http,//,/undesirable,/my-api -b=https://www.mydomain.com -r=5 -c=2 -k
 ```
 
 ## Production experience
