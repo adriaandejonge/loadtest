@@ -12,14 +12,27 @@ Please note:
 ## Running:
 
 ```
-./loadtest -l=<logfilename> -f=<filter-list> -b=<base-url> -r=<report-interval-in-sec> -c=<no-of-concurr-requests>
+Usage of /Users/adriaandejonge/go/bin/loadtest:
+  -b string
+    	base URL as prefix in front of paths in access logs
+  -c int
+    	number of concurrent requests (default 2)
+  -f string
+    	comma-separated list of URLs to filter
+  -l string
+    	file name of access log file to interpret
+  -r int
+    	report interval in seconds (default 1)
 ```
-
 
 e.g.:
 ```
 ./loadtest -l=myaccesslogfile.log -f=http,//,/mcss,/online-api -b=https://www.mydomain.com -r=5 -c=2
 ```
+
+## Production experience
+
+From experience, use concurrency 384 as a maximum concurrency per process. Spin up multiple instances of this load test on a single machine to get beyond this. A total number of 4 load tests ran well on a single machine (m4.2xlarge)
 
 ## Building
 
