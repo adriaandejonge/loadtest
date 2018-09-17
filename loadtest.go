@@ -18,65 +18,66 @@ import (
 	"golang.org/x/net/publicsuffix"
 )
 
-var reportInterval int
-var baseURL string
-var filters []string
-var keepCookies bool
-var goroutines int
-var verbose bool
-var suppressErr bool
-var repeat bool
+type Options struct {
+	reportInterval *int
+	baseURL        *string
+	filters        *string
+	keepCookies    *bool
+	goroutines     *int
+	verbose        *bool
+	suppressErr    *bool
+	repeat         *bool
+	fileName       *string
+}
+
+func (o *Options) Filters() []string {
+	return strings.Split(*o.filters, ",")
+}
+
+var options = Options{
+	flag.Int("r", 1, "report interval in seconds"),
+	flag.String("b", "", "base URL as prefix in front of paths in access logs"),
+	flag.String("f", "a,b,c", "comma-separated list of URLs to filter"),
+	flag.Bool("k", false, "boolean value keep cookies or not"),
+	flag.Int("c", 2, "number of concurrent requests"),
+	flag.Bool("v", false, "boolean for verbose output"),
+	flag.Bool("s", false, "boolean to suppress errors"),
+	flag.Bool("rp", false, "repeat after done reading log file"),
+	flag.String("l", "", "file name of access log file to interpret"),
+}
 
 func main() {
-	fileName := flag.String("l", "", "file name of access log file to interpret")
-	goroutinesArg := flag.Int("c", 2, "number of concurrent requests")
-	filtersArg := flag.String("f", "", "comma-separated list of URLs to filter")
-	repIntArg := flag.Int("r", 1, "report interval in seconds")
-	basUrlArg := flag.String("b", "", "base URL as prefix in front of paths in access logs")
-	keepCookiesArg := flag.Bool("k", false, "boolean value keep cookies or not")
-	verboseArg := flag.Bool("v", false, "boolean for verbose output")
-	suppressArg := flag.Bool("s", false, "boolean to suppress errors")
-	repeatArg := flag.Bool("rp", false, "repeat after done reading log file")
 
 	flag.Parse()
 
-	filters = strings.Split(*filtersArg, ",")
-	reportInterval = *repIntArg
-	baseURL = *basUrlArg
-	keepCookies = *keepCookiesArg
-	goroutines = *goroutinesArg
-	verbose = *verboseArg
-	suppressErr = *suppressArg
-	repeat = *repeatArg
-
-	log.Println("Access log file:", *fileName)
-	log.Println("Concurrent req #:", goroutines)
-	log.Println("Filters:", filters)
-	log.Printf("Report every: %d seconds", reportInterval)
-	log.Println("Base URL", baseURL)
-	log.Println("Keep cookies", keepCookies)
-	log.Println("Verbose output", verbose)
-	log.Println("Suppress errors", suppressErr)
-	log.Println("Repeat after done with log file", repeat)
+	log.Println("Access log file:", *options.fileName)
+	log.Println("Concurrent req #:", *options.goroutines)
+	log.Println("Filters:", options.Filters())
+	log.Printf("Report every: %d seconds", *options.reportInterval)
+	log.Println("Base URL", *options.baseURL)
+	log.Println("Keep cookies", *options.keepCookies)
+	log.Println("Verbose output", *options.verbose)
+	log.Println("Suppress errors", *options.suppressErr)
+	log.Println("Repeat after done with log file", *options.repeat)
 
 	queue := make(chan string)
 	timer := make(chan int)
 	hits := make(chan int)
 	stop := make(chan struct{})
 
-	for i := 0; i < goroutines; i++ {
+	for i := 0; i < *options.goroutines; i++ {
 		go readFromQueue(i, queue, stop, hits)
 	}
 
 	go report(hits, timer)
-	go sleepSec(reportInterval, timer, stop)
+	go sleepSec(timer, stop)
 
-	if repeat {
+	if *options.repeat {
 		for {
-			readLogs(*fileName, queue)
+			readLogs(*options.fileName, queue)
 		}
 	} else {
-		readLogs(*fileName, queue)
+		readLogs(*options.fileName, queue)
 	}
 
 	close(stop)
@@ -84,10 +85,10 @@ func main() {
 	os.Exit(0)
 }
 
-func sleepSec(timeout int, timer chan int, stop chan struct{}) {
+func sleepSec(timer chan int, stop chan struct{}) {
 	for {
-		time.Sleep(time.Duration(timeout) * time.Second)
-		timer <- timeout
+		time.Sleep(time.Duration(*options.reportInterval) * time.Second)
+		timer <- *options.reportInterval
 
 	}
 }
@@ -115,19 +116,18 @@ func readFromQueue(id int, queue chan string, stop chan struct{}, hits chan int)
 		log.Fatal(err)
 	}
 
-	// Customize the Transport to have larger connection pool
 	defaultRoundTripper := http.DefaultTransport
 	defaultTransportPointer, ok := defaultRoundTripper.(*http.Transport)
 	if !ok {
 		panic(fmt.Sprintf("defaultRoundTripper not an *http.Transport"))
 	}
-	defaultTransport := *defaultTransportPointer // dereference it to get a copy of the struct that the pointer points to
+	defaultTransport := *defaultTransportPointer
 	defaultTransport.MaxIdleConns = 100
 	defaultTransport.MaxIdleConnsPerHost = 100
 
-	if goroutines > 100 {
-		defaultTransport.MaxIdleConns = goroutines
-		defaultTransport.MaxIdleConnsPerHost = goroutines
+	if *options.goroutines > 100 {
+		defaultTransport.MaxIdleConns = *options.goroutines
+		defaultTransport.MaxIdleConnsPerHost = *options.goroutines
 	}
 
 	client := &http.Client{
@@ -150,7 +150,7 @@ func processLogLine(logLine string, hits chan int, client *http.Client) {
 
 		filtered := false
 
-		for _, el := range filters {
+		for _, el := range options.Filters() {
 			if strings.Index(path, el) > 0 {
 				filtered = true
 			}
@@ -158,24 +158,26 @@ func processLogLine(logLine string, hits chan int, client *http.Client) {
 
 		if !filtered {
 
-			if verbose {
-				log.Println("URL", baseURL+path)
+			fullPath := *options.baseURL + path
+
+			if *options.verbose {
+				log.Println("URL", fullPath)
 			}
 
-			r, err := client.Get(baseURL + path)
+			r, err := client.Get(fullPath)
 			if err != nil {
-				if !suppressErr {
+				if !*options.suppressErr {
 					log.Println(err)
 				}
 			} else {
 				hits <- 1
 				io.Copy(ioutil.Discard, r.Body)
 				r.Body.Close()
-				respURL, err := url.Parse(baseURL + path)
+				respURL, err := url.Parse(fullPath)
 				if err != nil {
 					log.Println("Could not read cookies")
 					log.Fatal(err)
-				} else if keepCookies {
+				} else if *options.keepCookies {
 					client.Jar.SetCookies(respURL, r.Cookies())
 				}
 			}
