@@ -27,7 +27,7 @@ Usage of /Users/adriaandejonge/go/bin/loadtest:
 
 e.g.:
 ```
-./loadtest -l=myaccesslogfile.log -f=http,//,/mcss,/online-api -b=https://www.mydomain.com -r=5 -c=2
+./loadtest -l=myaccesslogfile.log -f=http,//,/undesirable,/my-api -b=https://www.mydomain.com -r=5 -c=2
 ```
 
 ## Production experience
