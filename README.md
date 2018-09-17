@@ -12,13 +12,14 @@ Please note:
 ## Running:
 
 ```
-Usage of /Users/adriaandejonge/go/bin/loadtest:
+Usage of /var/folders/0c/fq5mgfy16296jyx5pc6ylqm40000gn/T/go-build435504359/b001/exe/loadtest:
   -b string
     	base URL as prefix in front of paths in access logs
   -c int
     	number of concurrent requests (default 2)
   -f string
     	comma-separated list of URLs to filter
+  -k	Boolean value keep cookies or not
   -l string
     	file name of access log file to interpret
   -r int
@@ -27,7 +28,7 @@ Usage of /Users/adriaandejonge/go/bin/loadtest:
 
 e.g.:
 ```
-./loadtest -l=myaccesslogfile.log -f=http,//,/undesirable,/my-api -b=https://www.mydomain.com -r=5 -c=2
+./loadtest -l=myaccesslogfile.log -f=http,//,/undesirable,/my-api -b=https://www.mydomain.com -r=5 -c=2 -k=true
 ```
 
 ## Production experience
