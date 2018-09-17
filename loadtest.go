@@ -38,10 +38,10 @@ var options = Options{
 	flag.Int("r", 1, "report interval in seconds"),
 	flag.String("b", "", "base URL as prefix in front of paths in access logs"),
 	flag.String("f", "a,b,c", "comma-separated list of URLs to filter"),
-	flag.Bool("k", false, "boolean value keep cookies or not"),
+	flag.Bool("k", false, "keep cookies across requests"),
 	flag.Int("c", 2, "number of concurrent requests"),
-	flag.Bool("v", false, "boolean for verbose output"),
-	flag.Bool("s", false, "boolean to suppress errors"),
+	flag.Bool("v", false, "verbose output"),
+	flag.Bool("s", false, "suppress errors"),
 	flag.Bool("rp", false, "repeat after done reading log file"),
 	flag.String("l", "", "file name of access log file to interpret"),
 }
