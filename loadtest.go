@@ -2,6 +2,7 @@ package main
 
 import (
 	"bufio"
+	"flag"
 	"log"
 	"net/http"
 	"os"
@@ -10,41 +11,42 @@ import (
 	"time"
 )
 
-const (
-	BASEURL = "https://PUTYOURURLHERE"
-	REPORT_INTERVAL = 1
-)
-
-var filterURLs = []string{
-	"/filter-this",
-	"/and-this",
-}
+var reportInterval int
+var baseURL string
+var filters []string
 
 func main() {
-	if len(os.Args) < 2 {
-		log.Fatal("Need at least 2 command line args")
-	}
-	fileName := os.Args[1]
-	goroutines, err := strconv.Atoi(os.Args[2])
-	if err != nil {
-		log.Fatal(err)
-	}
-	log.Println("LOG:", fileName)
-	log.Println("# Goroutines:", goroutines)
+	fileName := flag.String("l", "", "file name of access log file to interpret")
+	goroutines := flag.Int("c", 2, "number of concurrent requests")
+	filtersArg := flag.String("f", "", "comma-separated list of URLs to filter")
+	repIntArg := flag.Int("r", 1, "report interval in seconds")
+	basUrlArg := flag.String("b", "", "base URL as prefix in front of paths in access logs")
+
+	flag.Parse()
+
+	filters = strings.Split(*filtersArg, ",")
+	reportInterval = *repIntArg
+	baseURL = *basUrlArg
+
+	log.Println("Access log file:", *fileName)
+	log.Println("Concurrent req #:", *goroutines)
+	log.Println("Filters:", filters)
+	log.Printf("Report every: %d seconds", reportInterval)
+	log.Println("Base URL", baseURL)
 
 	queue := make(chan string)
 	timer := make(chan int)
 	hits := make(chan int)
 	stop := make(chan struct{})
 
-	for i := 0; i < goroutines; i++ {
-		go readFromQueue(i, queue, stop)
+	for i := 0; i < *goroutines; i++ {
+		go readFromQueue(i, queue, stop, hits)
 	}
 
-	go report(hits, timer, stop)
-	go sleepSec(REPORT_INTERVAL, timer, stop)
+	go report(hits, timer)
+	go sleepSec(reportInterval, timer, stop)
 
-	readLogs(fileName, queue, hits)
+	readLogs(*fileName, queue)
 
 	close(stop)
 
@@ -52,23 +54,16 @@ func main() {
 }
 
 func sleepSec(timeout int, timer chan int, stop chan struct{}) {
-loop:
 	for {
-		select {
-		case <-stop:
-			log.Println("end timer")
-			break loop
-		default:
-			time.Sleep(time.Duration(timeout) * time.Second)
-			timer <- timeout
-		}
+		time.Sleep(time.Duration(timeout) * time.Second)
+		timer <- timeout
+
 	}
 }
 
-func report(hits chan int, timer chan int, stop chan struct{}) {
+func report(hits chan int, timer chan int) {
 	counter := 0
 	previousCount := 0
-loop:
 	for {
 		select {
 		case count := <-hits:
@@ -78,27 +73,20 @@ loop:
 			new /= seconds
 			previousCount = counter
 			log.Println(strconv.Itoa(new) + " req/s")
-		case <-stop:
-			log.Println("end reporter")
-			break loop
 		}
 	}
 }
 
-func readFromQueue(id int, queue chan string, stop chan struct{}) {
-loop:
+func readFromQueue(id int, queue chan string, stop chan struct{}, hits chan int) {
+
 	for {
-		select {
-		case logLine := <-queue:
-			processLogLine(logLine)
-		case <-stop:
-			log.Println("end reading queue", id)
-			break loop
-		}
+
+		processLogLine(<-queue, hits)
+
 	}
 }
 
-func processLogLine(logLine string) {
+func processLogLine(logLine string, hits chan int) {
 
 	start := strings.Index(logLine, "\"GET ")
 	end := strings.Index(logLine, " HTTP/")
@@ -108,22 +96,24 @@ func processLogLine(logLine string) {
 
 		filtered := false
 
-		for _, el := range filterURLs {
+		for _, el := range filters {
 			if strings.Index(url, el) > 0 {
 				filtered = true
 			}
 		}
 
 		if !filtered {
-			_, err := http.Get(BASEURL + url)
+			_, err := http.Get(baseURL + url)
 			if err != nil {
 				log.Println(err)
+			} else {
+				hits <- 1
 			}
 		}
 	}
 }
 
-func readLogs(fileName string, queue chan string, hits chan int) {
+func readLogs(fileName string, queue chan string) {
 	file, err := os.Open(fileName)
 	if err != nil {
 		log.Fatal(err)
@@ -133,6 +123,5 @@ func readLogs(fileName string, queue chan string, hits chan int) {
 
 	for scanner.Scan() {
 		queue <- scanner.Text()
-		hits <- 1
 	}
 }
