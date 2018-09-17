@@ -12,7 +12,7 @@ Please note:
 ## Running:
 
 ```
-Usage of /var/folders/0c/fq5mgfy16296jyx5pc6ylqm40000gn/T/go-build435504359/b001/exe/loadtest:
+Usage of loadtest:
   -b string
     	base URL as prefix in front of paths in access logs
   -c int
