@@ -151,7 +151,7 @@ func processLogLine(logLine string, hits chan int, client *http.Client) {
 		filtered := false
 
 		for _, el := range options.Filters() {
-			if strings.Index(path, el) > 0 {
+			if strings.Index(path, el) >= 0 {
 				filtered = true
 			}
 		}
